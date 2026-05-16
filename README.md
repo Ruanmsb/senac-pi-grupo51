@@ -34,6 +34,8 @@ Foram implementados os requisitos funcionais do projeto. Vale ressaltar para evo
     *   Deverão ser implementadas camadas de sanitização contra links maliciosos que possam causar danos à aplicação ou aos usuários finais.
 *   **Sobre o Ciclo de Vida dos Dados:**
     *   Será implementado um prazo de expiração para o link gerado, garantindo que registros não fiquem armazenados no banco de dados por tempo indeterminado.
+*   **Sobre o Banco de Dados**
+    * Com o projeto indo para produção, utilizaríamos um banco mais robusto, como SQL Server, PostgreSQL, MySQL, etc.
 
 ## Como Executar o Projeto Localmente
 
