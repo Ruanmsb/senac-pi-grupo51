@@ -47,13 +47,15 @@ Foram implementados os requisitos funcionais do projeto. Vale ressaltar para evo
     python -m venv .venv
     .venv\Scripts\activate
 * **Linux/Mac:**
+    ```bash
     python3 -m venv .venv
     source .venv/bin/activate
 4. Instale as dependências:
     ```bash
     pip install -r requirements.txt
 5. Crie o arquivo .env na raiz do projeto e insira a string de conexão local:
-    DATABASE_URI=sqlite:///encurtador.db
+    ```bash
+    DATABASE_URI=sqlite:///banco.db
 6. Na pasta principal do projeto, inicie o servidor:
    ```bash
    python main.py
