@@ -1,63 +1,103 @@
 # Encurtador de URL
 
-Um sistema web rápido e seguro para encurtamento de links, desenvolvido em Python utilizando o microframework Flask. O projeto aplica padrões profissionais de arquitetura (MVC) e algoritmos criptográficos para garantir a integridade dos dados e a segurança das URLs geradas.
+Um sistema web para encurtamento de links, desenvolvido em Python com Flask. O projeto aplica arquitetura MVC, algoritmos criptográficos e boas práticas de segurança.
 
-## Tecnologias Utilizadas
+## Tecnologias
 
-*   **Linguagem:** Python 3
-*   **Framework Web:** Flask
-*   **Banco de Dados:** SQLite
-*   **ORM:** Flask-SQLAlchemy
-*   **Frontend:** HTML5 e CSS3 puro
+- **Linguagem:** Python 3.11+
+- **Framework Web:** Flask
+- **ORM:** Flask-SQLAlchemy 2.0
+- **Frontend:** HTML5, CSS3, JavaScript
 
-## Arquitetura do Projeto (MVC)
+## Arquitetura (MVC)
 
-**MVC (Model-View-Controller)** 
+| Arquivo | Camada | Responsabilidade |
+|---|---|---|
+| `main.py` | Orquestrador | Inicializa Flask, banco de dados e logging |
+| `models.py` | Model | Tabela `url` com tipagem moderna do SQLAlchemy 2.0 |
+| `controllers.py` | Controller | Regras de negócio, rotas API e persistência |
+| `templates/index.html` | View | Interface assíncrona |
+| `static/style.css` | View | Estilização dark minimalista |
 
-*   `main.py`: O orquestrador da aplicação. Inicializa o servidor, configura a conexão com o banco de dados local via variáveis de ambiente e executa a criação física das tabelas.
-*   `models.py`: A camada **Model**. Contém a representação da tabela do banco de dados (SQLite), estruturada com a sintaxe moderna do SQLAlchemy 2.0 (`Mapped` e `mapped_column`).
-*   `controllers.py`: A camada **Controller**. Centraliza toda a regra de negócio, rotas, lógica de segurança e persistência de dados.
-*   `templates/` e `static/`: A camada **View**. Separação estrita entre a marcação estrutural (`index.html`) e a estilização visual (`style.css`).
+## Funcionalidades
 
-## Lógica de Funcionamento e Segurança
+### Interface (Frontend assíncrono)
+- Encurtamento via `fetch()` + JSON — sem recarregamento de página
+- Mmétricas em tempo real: links criados, cliques totais e links do dia
+- Histórico de links com contagem de cliques, data de criação e expiração
+- Botões de copiar e excluir por linha
 
-1.  **Algoritmo Base62 Seguro:** O sistema não utiliza métodos pseudoaleatórios preditivos. A geração da string de 6 caracteres utiliza o alfabeto Base62 (letras maiúsculas, minúsculas e números) alimentado pela biblioteca nativa `secrets`. Isso garante entropia criptográfica do sistema operacional, impossibilitando a dedução de links e gerando um ecossistema com aproximadamente **56,8 bilhões** de combinações únicas.
-2.  **Prevenção de Colisões (Integridade de Dados):** Antes de salvar o registro, o Controller realiza uma checagem em tempo real no banco de dados. Caso o identificador sorteado já exista, um laço de repetição gera imediatamente novos códigos até garantir uma URL final 100% livre e inédita.
-3.  **Redirecionamento Dinâmico:** O acesso ao link curto captura a variável da URL diretamente pelo roteador do Flask, realizando a busca otimizada no banco (através do índice único da coluna) e redirecionando o tráfego de volta à URL original.
+### Backend (API REST)
 
-## Observações
+| Método | Rota | Descrição |
+|---|---|---|
+| `GET` | `/` | Página principal |
+| `POST` | `/api/encurtar` | Encurta uma URL, retorna JSON |
+| `GET` | `/api/stats` | Retorna métricas agregadas |
+| `GET` | `/api/links` | Lista os últimos 50 links |
+| `DELETE` | `/api/links/<id>` | Remove um link |
+| `GET` | `/<codigo>` | Redireciona e registra o clique |
 
-Foram implementados os requisitos funcionais do projeto. Vale ressaltar para evoluções futuras:
+### Segurança
 
-*   **Sobre a Lógica e Segurança:**
-    *   O método de busca/checagem no banco pode ser otimizado para lidar com escala e alta concorrência.
-    *   Deverão ser implementadas camadas de sanitização contra links maliciosos que possam causar danos à aplicação ou aos usuários finais.
-*   **Sobre o Ciclo de Vida dos Dados:**
-    *   Será implementado um prazo de expiração para o link gerado, garantindo que registros não fiquem armazenados no banco de dados por tempo indeterminado.
-*   **Sobre o Banco de Dados**
-    * Com o projeto indo para produção, utilizaríamos um banco mais robusto, como SQL Server, PostgreSQL, MySQL, etc.
+**Geração Base62 criptográfica** — usa `secrets.choice()` sobre o alfabeto Base62, gerando ~56,8 bilhões de combinações únicas por código de 6 caracteres.
 
-## Como Executar o Projeto Localmente
+**Prevenção de colisões via `IntegrityError`** — o INSERT é tentado diretamente; em caso de colisão o banco lança `IntegrityError`, a sessão sofre rollback e um novo código é gerado. Operação atômica, segura sob concorrência.
 
-**Pré-requisitos:** Ter o Python 3 instalado na máquina.
+**Sanitização de URLs** — valida esquema (`http/https` apenas), host e blocklist de domínios.
 
-1. Clone ou baixe este repositório.
-2. Abra o terminal na pasta raiz do projeto.
-3. Crie e ative o ambiente virtual:
-* **Windows:**
-    ```bash
-    python -m venv .venv
-    .venv\Scripts\activate
-* **Linux/Mac:**
-    ```bash
-    python3 -m venv .venv
-    source .venv/bin/activate
-4. Instale as dependências:
-    ```bash
-    pip install -r requirements.txt
-5. Crie o arquivo .env na raiz do projeto e insira a string de conexão local:
-    ```bash
-    DATABASE_URI=sqlite:///banco.db
-6. Na pasta principal do projeto, inicie o servidor:
-   ```bash
-   python main.py
+**Rate limiting por IP** — janela deslizante em memória; retorna `429` ao exceder o limite.
+
+**Expiração de links (TTL)** — campo `data_expiracao` no banco; links vencidos retornam `410 Gone`.
+
+**Contagem de cliques** — incrementada a cada redirecionamento, sem SELECT adicional.
+
+## Variáveis de Ambiente
+
+Copie `.env.example` para `.env`:
+
+| Variável | Padrão | Descrição |
+|---|---|---|
+| `DATABASE_URI` | — | String de conexão do banco |
+| `URL_CODIGO_TAMANHO` | `6` | Tamanho do código gerado |
+| `URL_TTL_DIAS` | `30` | Dias até expiração (0 = sem expiração) |
+| `RATE_LIMIT_JANELA_SEGUNDOS` | `60` | Janela do rate limit por IP |
+| `RATE_LIMIT_MAX_REQUISICOES` | `10` | Máximo de encurtamentos por janela |
+
+## Como Executar
+
+**Pré-requisitos:** Python 3.11+
+
+```bash
+# 1. Clone e entre na pasta
+git clone <repo> && cd url-shortener
+
+# 2. Crie e ative o ambiente virtual
+python -m venv .venv
+source .venv/bin/activate        # Linux/Mac
+# .venv\Scripts\activate         # Windows
+
+# 3. Instale as dependências
+pip install -r requirements.txt
+
+# 5. Inicie o servidor
+python main.py
+```
+
+### Limpeza de links expirados
+
+```bash
+flask limpar-expirados
+```
+
+## Evoluções Futuras
+
+- **Blocklist dinâmica** — integração com Google Safe Browsing ou VirusTotal
+- **Limpeza agendada** — cron job ou Celery Beat para `flask limpar-expirados`
+- **Autenticação** — painel de gerenciamento por usuário
+- **Banco de produção** — PostgreSQL com Alembic para controle de migrações
+- **Domínio customizado** — suporte a slugs personalizados pelo usuário
+
+## Observação sobre Métricas e Histórico
+
+Conforme definido no documento de requisitos, as funcionalidades de analytics (cards de métricas, histórico de links e contagem de cliques) são previstas para usuários autenticados. No MVP atual, essas funcionalidades estão implementadas e expostas sem autenticação **exclusivamente para fins de demonstração técnica**, validando que a coleta de dados e as rotas da API funcionam corretamente. A proteção dessas rotas por login será implementada na próxima fase do projeto.

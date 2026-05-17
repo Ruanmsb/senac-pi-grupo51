@@ -1,30 +1,196 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Encurtador de URL</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ENCRT - Encurtador de URLs</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}" />
 </head>
+
 <body>
-    <div class="container">
-        <h1>Encurtador de URL</h1>
-        <form method="POST" action="/">
-            <input type="url" name="url" placeholder="Cole sua URL longa aqui (com http/https)..." required>
-            <button type="submit">Encurtar</button>
-        </form>
 
-        {% if erro %}
-            <p class="erro">{{ erro }}</p>
-        {% endif %}
+  <header class="header">
+    <span class="logo">encrt<span class="logo-dot">//</span></span>
+    <span class="header-sub">encurtador de URLs</span>
+  </header>
 
-        {% if url_curta %}
-            <div class="resultado">
-                <p><strong>Original:</strong> {{ url_original }}</p>
-                <p><strong>Sua URL curta:</strong></p>
-                <a href="{{ url_curta }}" target="_blank">{{ url_curta }}</a>
+  <main class="main">
+
+    <section class="card">
+      <div class="input-row">
+        <input type="url" id="url-input" class="url-input" placeholder="Cole sua URL aqui (https://...)"
+          autocomplete="off" spellcheck="false" />
+        <button class="btn-primary" id="btn-enc" onclick="encurtar()">
+          <span id="btn-text">Encurtar</span>
+        </button>
+      </div>
+      <div id="feedback" class="feedback" aria-live="polite"></div>
+      <div id="result-box" class="result-box">
+        <div class="result-row">
+          <a id="result-link" class="result-link" href="#" target="_blank" rel="noopener"></a>
+          <button class="btn-copy" id="btn-copy" onclick="copiar()">Copiar</button>
+        </div>
+        <span id="result-expiry" class="result-expiry"></span>
+      </div>
+    </section>
+
+    <section class="stats-row">
+      <div class="stat">
+        <span class="stat-val" id="stat-total">—</span>
+        <span class="stat-key">links criados</span>
+      </div>
+      <div class="stat-sep"></div>
+      <div class="stat">
+        <span class="stat-val" id="stat-cliques">—</span>
+        <span class="stat-key">cliques totais</span>
+      </div>
+      <div class="stat-sep"></div>
+      <div class="stat">
+        <span class="stat-val" id="stat-hoje">—</span>
+        <span class="stat-key">hoje</span>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="section-header">
+        <span class="section-title">Meus links</span>
+        <button class="btn-ghost" onclick="carregarDados()">↻ atualizar</button>
+      </div>
+      <div id="links-list" class="links-list">
+        <span class="empty">Carregando...</span>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    const $ = id => document.getElementById(id);
+
+    function truncar(str, max) {
+      return str.length > max ? str.slice(0, max) + '…' : str;
+    }
+
+    async function encurtar() {
+      const url = $('url-input').value.trim();
+      const btn = $('btn-enc');
+      if (!url) { mostrarErro('Insira uma URL.'); return; }
+
+      btn.disabled = true;
+      $('btn-text').textContent = 'Gerando…';
+      $('feedback').className = 'feedback';
+      $('feedback').textContent = '';
+      $('result-box').classList.remove('result-box--visible');
+
+      try {
+        const res = await fetch('/api/encurtar', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url }),
+        });
+        const d = await res.json();
+        if (!res.ok) { mostrarErro(d.erro); return; }
+
+        $('result-link').href = d.url_curta;
+        $('result-link').textContent = d.url_curta;
+        $('result-expiry').textContent = d.expiracao ? 'Expira em ' + d.expiracao : '';
+        $('result-box').classList.add('result-box--visible');
+        $('btn-copy').textContent = 'Copiar';
+        $('btn-copy').classList.remove('btn-copy--ok');
+        $('url-input').value = '';
+        carregarDados();
+      } catch {
+        mostrarErro('Falha na conexão. Tente novamente.');
+      } finally {
+        btn.disabled = false;
+        $('btn-text').textContent = 'Encurtar';
+      }
+    }
+
+    function mostrarErro(msg) {
+      $('feedback').textContent = msg;
+      $('feedback').className = 'feedback feedback--erro';
+    }
+
+    function copiar() {
+      navigator.clipboard.writeText($('result-link').href).then(() => {
+        $('btn-copy').textContent = 'Copiado!';
+        $('btn-copy').classList.add('btn-copy--ok');
+        setTimeout(() => {
+          $('btn-copy').textContent = 'Copiar';
+          $('btn-copy').classList.remove('btn-copy--ok');
+        }, 2000);
+      });
+    }
+
+    function copiarLinha(url, btn) {
+      navigator.clipboard.writeText(url).then(() => {
+        btn.textContent = 'Copiado!';
+        btn.classList.add('btn-copy--ok');
+        setTimeout(() => { btn.textContent = 'Copiar'; btn.classList.remove('btn-copy--ok'); }, 2000);
+      });
+    }
+
+    async function excluir(id, row) {
+      if (!confirm('Excluir este link?')) return;
+      const res = await fetch('/api/links/' + id, { method: 'DELETE' });
+      if (res.ok) {
+        row.style.opacity = '0';
+        setTimeout(() => { row.remove(); carregarStats(); }, 250);
+      }
+    }
+
+    async function carregarStats() {
+      try {
+        const d = await fetch('/api/stats').then(r => r.json());
+        $('stat-total').textContent = d.total_links;
+        $('stat-cliques').textContent = d.total_cliques;
+        $('stat-hoje').textContent = d.hoje;
+      } catch { }
+    }
+
+    async function carregarLinks() {
+      const lista = $('links-list');
+      try {
+        const links = await fetch('/api/links').then(r => r.json());
+        if (!links.length) {
+          lista.innerHTML = '<span class="empty">Nenhum link criado ainda.</span>';
+          return;
+        }
+        lista.innerHTML = links.map(l => `
+          <div class="link-row${l.expirado ? ' link-row--exp' : ''}" id="row-${l.id}">
+            <div class="link-info">
+              <a class="link-short" href="${l.url_curta}" target="_blank" rel="noopener">${l.url_curta}</a>
+              <span class="link-original" title="${l.url_original}">${truncar(l.url_original, 60)}</span>
+              <span class="link-meta">
+                ${l.data_cadastro}
+                ${l.expiracao ? ' · expira ' + l.expiracao : ''}
+                · ${l.cliques} clique${l.cliques !== 1 ? 's' : ''}
+                ${l.expirado ? ' · <span class="tag-exp">expirado</span>' : ''}
+              </span>
             </div>
-        {% endif %}
-    </div>
+            <div class="link-actions">
+              <button class="btn-ghost" onclick="copiarLinha('${l.url_curta}', this)">Copiar</button>
+              <button class="btn-ghost btn-ghost--danger" onclick="excluir(${l.id}, document.getElementById('row-${l.id}'))">Excluir</button>
+            </div>
+          </div>
+        `).join('');
+      } catch {
+        lista.innerHTML = '<span class="empty">Erro ao carregar.</span>';
+      }
+    }
+
+    function carregarDados() { carregarStats(); carregarLinks(); }
+
+    $('url-input').addEventListener('keydown', e => { if (e.key === 'Enter') encurtar(); });
+    carregarDados();
+  </script>
 </body>
+
 </html>
