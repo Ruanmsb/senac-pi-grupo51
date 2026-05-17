@@ -23,7 +23,7 @@ Um sistema web para encurtamento de links, desenvolvido em Python com Flask. O p
 
 ### Interface (Frontend assíncrono)
 - Encurtamento via `fetch()` + JSON — sem recarregamento de página
-- Mmétricas em tempo real: links criados, cliques totais e links do dia
+- Métricas em tempo real: links criados, cliques totais e links do dia
 - Histórico de links com contagem de cliques, data de criação e expiração
 - Botões de copiar e excluir por linha
 
