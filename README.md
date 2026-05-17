@@ -54,7 +54,7 @@ Um sistema web para encurtamento de links, desenvolvido em Python com Flask. O p
 
 ## Variáveis de Ambiente
 
-Copie `.env.example` para `.env`:
+Crie o arquivo `.env` na raiz do projeto e adicione as stirngs abaixo:
 
 | Variável | Padrão | Descrição |
 |---|---|---|
