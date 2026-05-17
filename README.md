@@ -48,6 +48,22 @@ Para apenas preparar ambiente (sem subir servidor):
 
 - App: http://127.0.0.1:5000
 - Swagger: http://127.0.0.1:5000/apidocs/
+- Analytics: http://127.0.0.1:5000/analytics
+
+## Analytics
+
+Pagina de visualizacao de dados com graficos e historico de links.
+
+Conteúdo:
+- Total de links criados
+- Total de cliques
+- Links criados hoje
+- Grafico de barras: links por dia (ultimos 30 dias)
+- Grafico em pizza: distribuicao de cliques (top 10 links)
+- Tabela com historico dos ultimos 20 links (codigo, URL original, cliques, data, status)
+- Atualiza automaticamente a cada 30 segundos
+
+Acesso: clique no botao "Analytics" na pagina inicial, ou acesse diretamente em /analytics.
 
 ## Variaveis de ambiente
 
