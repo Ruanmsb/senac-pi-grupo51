@@ -70,7 +70,7 @@ Copie `.env.example` para `.env`:
 
 ```bash
 # 1. Clone e entre na pasta
-git clone <repo> && cd url-shortener
+git clone <repo> && cd senac-pi-grupo51
 
 # 2. Crie e ative o ambiente virtual
 python -m venv .venv
